@@ -6,14 +6,14 @@ LD_FLAGS    = -lcudart -Xlinker -rpath,$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/sdk/CUD
 PROG_FLAGS  = -DSIZE=32
 
 
-EXE4GPUs    = kernel4GPUs.exe
+EXE4GPUs    = memoria.exe
 
-OBJ4GPUs    = MM4GPUs.o
+OBJ4GPUs    = memoria.o
 
 default: $(EXE4GPUs)
 
-MM4GPUs.o: MM4GPUs.cu
-	$(NVCC) -c -o $@ MM4GPUs.cu $(NVCC_FLAGS) $(PROG_FLAGS)
+memoria.o: memoria.cu
+	$(NVCC) -c -o $@ memoria.cu $(NVCC_FLAGS) $(PROG_FLAGS)
 
 
 $(EXE4GPUs): $(OBJ4GPUs)

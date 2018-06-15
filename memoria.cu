@@ -5,10 +5,7 @@ int main() {
 	for (int i = 0; i < nDevices; i++) {
 		cudaDeviceProp prop;
 		cudaGetDeviceProperties(&prop, i);
-		printf("%d\n", prop.sharedMemPerBlock);	
+		printf("%lu\n", prop.sharedMemPerBlock);	
 
 	}
-
-
-
 }
