@@ -5,10 +5,10 @@
 
 //Afegim un tamany per defecte
 //Imprescindible que sigui potencia de 2
-#define N 32768
-#define NUM_THREADS 64
-#define NUM_BLOCKS 512
-#define NUM_BYTES N*sizeof(int)
+#define NUM_THREADS 1024
+#define NUM_BLOCKS 32768
+#define N NUM_THREADS*NUM_BLOCKS
+unsigned int  NUM_BYTES = N*sizeof(int);
 
 //Macro per a swap
 #define SWAP(_i, _ixj){\
@@ -25,9 +25,15 @@ __global__ void bitonicSortKernel(int *vector, int j, int k){
 	if((ixj) > i){
 		if((i & k) == 0 && vector[i] > vector[ixj]){
 			SWAP(i, ixj);
+			//int aux = vector[i];
+			//vector[i] = vector[ixj];
+			//vector[ixj] = aux;
 		}
 		if((i & k) != 0 && vector[i] < vector[ixj]){
 			SWAP(i, ixj);
+			//int aux = vector[i];
+			//vector[i] = vector[ixj];
+			//vector[ixj] = aux;
 		}
 	}
 }
@@ -60,36 +66,41 @@ int main(int argc, char **argv) {
 	//Generacio dels parametres del vector
 	int n = N;
 	if(argc > 1) n = atoi(argv[1]); 
-	int *vector, *vectorDevice;
+	int *vector, *vectorDevice, *vectorAux;
 
-	cudaEvent_t E0, E1;
+	cudaEvent_t E0, E1, E2, E3;
 
 	cudaEventCreate(&E0);
 	cudaEventCreate(&E1);
+	cudaEventCreate(&E2);
+	cudaEventCreate(&E3);
 
 	//Reserva de memoria per als vectors
 	cudaMallocHost(&vector, NUM_BYTES);
+	cudaMallocHost(&vectorAux, NUM_BYTES);
 	cudaMalloc((int **)&vectorDevice, NUM_BYTES);
 	
 	//Inicialitzacio amb valors random
 	int i;
 	srand(time(NULL));
 	for(i = 0; i < n; ++i){
-		srand(i);
 		vector[i] = rand();
 	}
-	
-	//Pas del vector de host a device
-	cudaMemcpy(vectorDevice, vector, NUM_BYTES, cudaMemcpyHostToDevice);
 
 	cudaEventRecord(E0, 0);
 	cudaEventSynchronize(E0);
+	
+	cudaEventRecord(E1, 0);
+	cudaEventSynchronize(E1);
+
+	//Pas del vector de host a device
+	cudaMemcpy(vectorDevice, vector, NUM_BYTES, cudaMemcpyHostToDevice);
 
 	//Fem sort del vector
 	bitonicSort(n, vector);
 
-	cudaEventRecord(E1, 0);
-	cudaEventSynchronize(E1);
+	cudaEventRecord(E2, 0);
+	cudaEventSynchronize(E2);
 
 	//Pas del vector de device a host
 	cudaMemcpy(vector, vectorDevice, NUM_BYTES, cudaMemcpyDeviceToHost);
@@ -101,18 +112,22 @@ int main(int argc, char **argv) {
 	//Alliberacio de memoria
 	cudaFree(vector);
 	cudaFree(vectorDevice);
-	
+
 	cudaDeviceSynchronize();
-	
+	cudaEventRecord(E3, 0);
+	cudaEventSynchronize(E3);
+
 	//Timing
 	float tempsTotal;
-	cudaEventElapsedTime(&tempsTotal, E0, E1);
+	cudaEventElapsedTime(&tempsTotal, E0, E3);
 	
 	printf("Temps: %f", tempsTotal);
 
 	//Destrueix events
 	cudaEventDestroy(E0);
 	cudaEventDestroy(E1);
+	cudaEventDestroy(E2);
+	cudaEventDestroy(E3);
 
 	return 0;
 }
