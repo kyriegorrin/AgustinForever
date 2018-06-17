@@ -15,7 +15,7 @@ export PATH=/Soft/cuda/8.0.61/bin:$PATH
 
 # Para comprobar que funciona no es necesario usar matrices muy grandes
 # Con N = 1024 es suficiente
-./bitonic_1GPU.exe
+./bitonic_iterative
 
 # Con matrices muy grandes no es recomendable comprobar el resultado
 #nvprof --print-gpu-trace ./kernel4GPUs.exe 8192 N

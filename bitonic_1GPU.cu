@@ -4,7 +4,7 @@
 #include <cuda.h>
 
 #define NUM_THREADS     1024				 
-#define NUM_BLOCKS 	32768			
+#define NUM_BLOCKS 	1024	
 #define NUM_VALUES NUM_THREADS*NUM_BLOCKS
 
 //Macro per a swap
@@ -52,17 +52,25 @@ int testOrdenacio(int length, int *vector){
 	return ordenat;
 }
 
-int main(){
+int main(int argc, char **argv){
+	int n = NUM_VALUES;
+	if(argc > 1) n = atoi(argv[1]); 
+
 	//Vectors i variables auxiliars	
   	int *host_v, *dev_v;
-  	float tempsTotal; 
 
 	//Creacio d'events
-  	cudaEvent_t E0, E1;
+  	cudaEvent_t E0, E1, E2, E3;
   	cudaEventCreate(&E0);
   	cudaEventCreate(&E1);  
+  	cudaEventCreate(&E2);  
+  	cudaEventCreate(&E3);  
 
   	unsigned int numBytes = NUM_VALUES * sizeof(int);
+
+	//Timing
+  	cudaEventRecord(E0, 0);
+  	cudaEventSynchronize(E0);
 
 	//Reservem memoria al host
   	cudaMallocHost( &host_v, numBytes);
@@ -73,43 +81,57 @@ int main(){
   	for(i = 0; i < NUM_VALUES; ++i){
   		host_v[i] = rand();
   	}
-
-  	cudaEventRecord(E0, 0);
-  	cudaEventSynchronize(E0);
-
+	
   	//Reservem memoria al device
   	cudaMalloc((int**)&dev_v, numBytes);
 
   	//Enviem les dades del host al device
   	cudaMemcpy(dev_v, host_v, numBytes, cudaMemcpyHostToDevice);
 
+	//Timing	
+  	cudaEventRecord(E2, 0);
+  	cudaEventSynchronize(E2);
+
   	//Executem el kernel
   	bitonicSort(NUM_VALUES ,dev_v);
+
+	//Timing	
+  	cudaEventRecord(E3, 0);
+  	cudaEventSynchronize(E3);
 
   	//Recuperem les dades tractades del device
   	cudaMemcpy( host_v, dev_v, numBytes, cudaMemcpyDeviceToHost);
 
   	//Apliquem el test de correctesa
-  	if(testOrdenacio(NUM_VALUES, host_v)) printf("Agustin is happy\n");
-  	else printf("Agustin te deniega el curso PUMPS\n");
+  	if(testOrdenacio(NUM_VALUES, host_v)) printf("TEST CORRECTO\n");
+  	else printf("TEST FALLADO\n\n");
   	
   	//Alliberem memoria reservada anteriorment
   	cudaFree(dev_v);
   	cudaFree(host_v); 
 
+	//Timing
   	cudaDeviceSynchronize();
   	cudaEventRecord(E1, 0);
   	cudaEventSynchronize(E1);
 
 	//Calculem i mostrem temps d'execucio del programa
+  	float tempsTotal, tempsKernel; 
   	cudaEventElapsedTime(&tempsTotal, E0, E1);
+  	cudaEventElapsedTime(&tempsKernel, E2, E3);
 
-  	printf("Nombre de threads utilitzat: %d\n", NUM_THREADS);
-  	printf("Nombre de blocks utilitzat: %d\n", NUM_BLOCKS);
-  	printf("Temps total: %4.6f milseg\n", tempsTotal);
+	n = NUM_VALUES;
+
+  	printf("Numero de threads: %d\n", NUM_THREADS);
+  	printf("Numero de blocks: %d\n", NUM_BLOCKS);
+	printf("Numero de valores de entrada: %d\n", n);
+  	printf("Tiempo total de programa: %f ms\n", tempsTotal);
+	printf("Tiempo de kernel: %f ms\n", tempsKernel);
 
 	//Destruim els events
   	cudaEventDestroy(E0); 
   	cudaEventDestroy(E1);
+	cudaEventDestroy(E2);
+	cudaEventDestroy(E3);
 } 
 

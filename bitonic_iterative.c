@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 //Afegim un tamany per defecte
-#define N 16384
+#define N 16777216
 
 //Funció de canvi entre valors de posicions de vector
 //Assumim que el valors "i" i "j" estan dins del seu rang
@@ -44,6 +44,9 @@ int main(int argc, char **argv) {
 	int n = N;
 	if(argc > 1) n = atoi(argv[1]); 
 	int vector[n];
+
+	//Agafem el temps d'inici de calculs
+	clock_t begin = clock();
 	
 	//Inicialitzacio amb valors random
 	int i;
@@ -54,18 +57,24 @@ int main(int argc, char **argv) {
 	}
 	
 	//Fem sort del vector
+	clock_t beginSort = clock();
 	bitonicSort(n, vector);
+	clock_t endSort = clock();
 
-	//DEBUG
-       	/*
-	for(i = 0; i < n; ++i){
-		printf("%d ", vector[i]);	
-	} printf("\n");
-	*/
-	
 	//Test per veure si la ordenacio es correcte
-	if(testOrdenacio(n, vector)) printf("Agustin is happy\n");
-	else printf("Agustin te deniega el curso PUMPS\n");
+	if(testOrdenacio(n, vector)) printf("TEST CORRECTO\n");
+	else printf("TEST FALLADO\n\n");
+
+	//Agafem el temps final de calculs
+	clock_t end = clock();
+
+	//Printem els temps obtinguts
+	double tempsTotal = (double)(end - begin) / CLOCKS_PER_SEC;
+	double tempsKernel = (double) (endSort - beginSort) / CLOCKS_PER_SEC;
+
+	printf("Numero de valores de entrada: %d\n", n);
+	printf("Tiempo total de programa: %f segundos\n", tempsTotal);
+	printf("Tiempo de kernel: %f segundos\n", tempsKernel);
 
 	return 0;
 }
